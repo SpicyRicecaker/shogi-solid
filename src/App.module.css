@@ -1,0 +1,24 @@
+.boardBody {
+  display: grid;
+  grid-template-rows: 1fr 5fr 1fr;
+}
+
+.board {
+  display: grid;
+  grid-template: repeat(9, auto) / repeat(9, auto);
+  min-width: 0;
+  min-height: 0;
+  margin-left: 10%;
+  margin-right: 10%;
+}
+
+.board > * {
+  /* min-width: 0;
+  min-height: 0; */
+  aspect-ratio: 1/1;
+  /* overflow: hidden; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+}
