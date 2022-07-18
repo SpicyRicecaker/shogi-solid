@@ -1,7 +1,19 @@
-import { Component } from 'solid-js';
+import { Component, createSignal } from 'solid-js';
+import { Piece, Player, Placement } from './lib';
 
 import styles from './App.module.css';
 import { BoardComponent } from './Board';
+
+export const [turn, setTurn] = createSignal(Player.Challenging);
+
+export interface SelectedPiece {
+  placement: Placement,
+  x?: number,
+  y?: number
+}
+
+const temp = (): null | SelectedPiece => null;
+export const [selectedPiece, setSelectedPiece] = createSignal(temp());
 
 const reserve = () => {
 
