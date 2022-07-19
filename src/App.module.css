@@ -1,6 +1,14 @@
+:root {
+  --board-len: calc(min(90vh, 90vw) * 5 / 7);
+  --square-len: calc(var(--board-len) / 9);
+  --font-size: calc(var(--square-len) * 0.5)
+}
+
 .boardBody {
   display: grid;
   grid-template-rows: 1fr 5fr 1fr;
+  min-width: 0;
+  min-height: 0;
 }
 
 .board {
@@ -8,18 +16,40 @@
   grid-template: repeat(9, auto) / repeat(9, auto);
   min-width: 0;
   min-height: 0;
-  margin-left: 10%;
-  margin-right: 10%;
+
+  width: var(--board-len);
+  height: var(--board-len);
+
+  align-self: center;
+  justify-self: center;
   & > * {
-    /* min-width: 0;
-    min-height: 0; */
-    aspect-ratio: 1/1;
-    /* overflow: hidden; */
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 2rem;
+    font-size: var(--font-size);
   }
+}
+
+.reserve {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  & > * {
+    width: var(--square-len);
+    height: var(--square-len);
+
+    font-size: var(--font-size);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+.empty {
+  opacity: 0.3;
 }
 
 .available {

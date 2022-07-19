@@ -1,51 +1,44 @@
-import { Component, createSignal } from 'solid-js';
-import { Piece, Player, Placement } from './lib';
+import { Component, createSignal } from "solid-js";
+import { Piece, Player, Placement } from "./lib";
+import { createMutable } from "solid-js/store";
 
-import styles from './App.module.css';
-import { BoardComponent } from './Board';
+import styles from "./App.module.css";
+import { BoardComponent } from "./Board";
+import { ReserveComponent, initReserve, initDoubledReserve } from "./Reserve";
 
 export const [turn, setTurn] = createSignal(Player.Challenging);
 
 export interface SelectedPiece {
-  placement: Placement,
-  x?: number,
-  y?: number,
-  pieceType?: Piece,
+  placement: Placement;
+  x?: number;
+  y?: number;
+  pieceType?: Piece;
 }
 
 const temp = (): null | SelectedPiece => null;
 export const [selectedPiece, setSelectedPiece] = createSignal(temp());
 
-const reserve = () => {
-
-}
+export const reserve = createMutable(initDoubledReserve());
 
 const App: Component = () => {
   return (
     <>
-      <div>header here</div>
+      <div>
+        <div>A Game of Shogi</div>
+        <a href="https://github.com/SpicyRicecaker/shogi-solid">src</a>
+      </div>
       <div class={styles.boardBody}>
-        <div></div>
-        <BoardComponent/>
-        <div></div>
+        <ReserveComponent
+          owner={Player.Residing}
+          reserve={reserve[Player.Residing]}
+        />
+        <BoardComponent />
+        <ReserveComponent
+          owner={Player.Challenging}
+          reserve={reserve[Player.Challenging]}
+        />
       </div>
     </>
-    // <div class={styles.Afp}>
-    //   <header class={styles.header}>
-    //     <img src={logo} class={styles.logo} alt="logo" />
-    //     <p>
-    //       Edit <code>src/App.tsx</code> and save to reload.
-    //     </p>
-    //     <a
-    //       class={styles.link}
-    //       href="https://github.com/solidjs/solid"
-    //       target="_blank"
-    //       rel="noopener noreferrer"
-    //     >
-    //       Learn Solid
-    //     </a>
-    //   </header>
-    // </div>
   );
 };
 

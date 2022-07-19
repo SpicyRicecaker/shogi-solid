@@ -24,15 +24,15 @@ export interface Square {
     available: boolean
 }
 
-export const kanji = (p: Piece): string => {
-    if (p.type === 'k') {
-        if (p.owner == Player.Challenging) {
+export const kanji = (o: Player, r: Rank, t: string): string => {
+    if (t === 'k') {
+        if (o == Player.Challenging) {
             return '玉'
         } else {
             return '王'
         }
     }
-    return pieceToKanji[p.rank][p.type];
+    return pieceToKanji[r][t];
 }
 
 const pieceToKanji: { [key: number]: { [key: string]: string } } = {

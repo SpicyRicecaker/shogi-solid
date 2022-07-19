@@ -1,27 +1,47 @@
 import { For, Show } from "solid-js";
-import { turn, selectedPiece, SelectedPiece, setSelectedPiece } from "./App";
+import {
+  turn,
+  selectedPiece,
+  SelectedPiece,
+  setSelectedPiece,
+  reserve,
+} from "./App";
 import { Piece, Rank, Player, kanji, Square, Placement } from "./lib";
 import { Component } from "solid-js";
-import { createStore, produce } from "solid-js/store";
+import {
+  createMutable,
+  createStore,
+  modifyMutable,
+  reconcile,
+} from "solid-js/store";
+import { DoubledReserve, initReserve } from "./Reserve";
 
 import styles from "./App.module.css";
 import { initSquares } from "./squares";
 
+// function takes in mutable reference to b and r, mutates them
 const movePiece = (
   e: MouseEvent,
   p: SelectedPiece,
   x: number,
   y: number,
-  b: (Piece | null)[][]
-): (Piece | null)[][] => {
+  b: (Piece | null)[][],
+  r: DoubledReserve
+): void => {
   // match statement here later TODO DEBUG ...
+  // console.log("attemping to move piece");
+  const temp = b[y][x];
+  // if we actually took a piece, move it to the selected piece's player's reserve
+  if (temp) {
+    r[(b[p.y as number][p.x as number] as Piece).owner].find(
+      (reservePiece) => reservePiece.type === temp.type
+    )!.count += 1;
+  }
 
-  console.log("attemping to move piece");
-  const _temp = b[y][x];
   b[y][x] = b[p.y as number][p.x as number];
+
   // also need to handle promotions as well.
   b[p.y as number][p.x as number] = null;
-  return b;
 
   // add temp to `turn()`'s reserve
   // also implement take
@@ -67,21 +87,24 @@ export const BoardComponent: Component = () => {
                       ? styles.selectedSquare
                       : ""
                   }
-                  ${piece ? styles.availablePiece : '' /* change cursor if square is occupied*/ }
+                  ${
+                    piece && piece.owner === turn()
+                      ? styles.availablePiece
+                      : "" /* change cursor if square is occupied*/
+                  }
                   `}
                   onClick={(e) => {
                     // if it's an available square
                     if (squares[y()][x()]) {
                       // deep clone board, not sure how performant this is
-                      const b = JSON.stringify(board);
-                      setBoard(
-                        movePiece(
-                          e,
-                          selectedPiece() as unknown as SelectedPiece,
-                          x(),
-                          y(),
-                          JSON.parse(b) as (null | Piece)[][]
-                        )
+
+                      movePiece(
+                        e,
+                        selectedPiece() as unknown as SelectedPiece,
+                        x(),
+                        y(),
+                        board,
+                        reserve
                       );
 
                       // remove all available pieces
@@ -110,15 +133,18 @@ export const BoardComponent: Component = () => {
                   <Show when={piece}>
                     <div
                       onClick={(e) => {
-                        e.stopPropagation();
-                        // if there is already a selected piece
-                        // if the piece selected is an enemy piece, continue event propogation
+                        //  fix bug introduced by previous commit where clicking directly on an enemy piece with a selectedpiece doesn't capture it
                         if (
                           selectedPiece() &&
                           (piece as Piece).owner !== turn()
                         ) {
                           return;
                         }
+                        e.stopPropagation();
+                        if ((piece as Piece).owner !== turn()) {
+                          return;
+                        }
+
                         setSelectedPiece({
                           placement: Placement.Board,
                           x: x(),
@@ -133,7 +159,11 @@ export const BoardComponent: Component = () => {
                           : ""
                       }
                     >
-                      {kanji(piece as Piece)}
+                      {kanji(
+                        (piece as Piece).owner,
+                        (piece as Piece).rank,
+                        (piece as Piece).type
+                      )}
                     </div>
                   </Show>
                 </div>
@@ -183,7 +213,7 @@ export const initBoard = (): (Piece | null)[][] => {
   return boardInit;
 };
 
-const [board, setBoard] = createStore(initBoard());
+const board = createMutable(initBoard());
 const [squares, setSquare] = createStore(initSquares());
 
 const addAvailableTowards = (
