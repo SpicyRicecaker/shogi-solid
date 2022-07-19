@@ -21,3 +21,19 @@
     font-size: 2rem;
   }
 }
+
+.available {
+  cursor: pointer;
+  background-color: aliceblue;
+  &:hover {
+    background-color: rgba(0, 0, 121, 0.5);
+  }
+}
+
+.availablePiece {
+  cursor: pointer;
+}
+
+.selectedSquare {
+  background-color: gold;
+}

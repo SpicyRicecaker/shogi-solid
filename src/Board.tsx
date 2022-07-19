@@ -1,77 +1,150 @@
 import { For, Show } from "solid-js";
-import { turn, selectedPiece, SelectedPiece, setSelectedPiece } from './App';
-import { Piece, Rank, Player, kanji, Square, Placement } from './lib';
-import { Component } from 'solid-js';
-import { createStore, produce } from 'solid-js/store';
+import { turn, selectedPiece, SelectedPiece, setSelectedPiece } from "./App";
+import { Piece, Rank, Player, kanji, Square, Placement } from "./lib";
+import { Component } from "solid-js";
+import { createStore, produce } from "solid-js/store";
 
-import styles from './App.module.css';
+import styles from "./App.module.css";
 import { initSquares } from "./squares";
 
-const movePiece = (e: MouseEvent, p: SelectedPiece, x: number, y: number, b: (Piece | null)[][]): (Piece | null)[][] => {
-
+const movePiece = (
+  e: MouseEvent,
+  p: SelectedPiece,
+  x: number,
+  y: number,
+  b: (Piece | null)[][]
+): (Piece | null)[][] => {
   // match statement here later TODO DEBUG ...
 
-  console.log('attemping to move piece');
+  console.log("attemping to move piece");
   const _temp = b[y][x];
   b[y][x] = b[p.y as number][p.x as number];
-  // also need to handle promotions as well. 
+  // also need to handle promotions as well.
   b[p.y as number][p.x as number] = null;
   return b;
 
   // add temp to `turn()`'s reserve
   // also implement take
-}
+};
+
+const isSelected = (
+  p: SelectedPiece,
+  s: SelectedPiece | null,
+  board: (Piece | null)[][]
+): boolean => {
+  if (!s) {
+    return false;
+  }
+
+  if (p.placement !== s.placement) {
+    return false;
+  }
+
+  if (p.placement === Placement.Board) {
+    return s.x == p.x && s.y == p.y;
+  } else {
+    // ...todo!
+    return false;
+  }
+};
 
 export const BoardComponent: Component = () => {
-  return <div class={styles.board}>
-    <For each={board}>
-      {(row, y) =>
-        <For each={row}>
-          {(piece, x) => (
-            <div
-              style={
-                {
-                  "position": "relative",
-                  "background-color": squares[y()][x()] ? "blue" : "white"
-                }
-              }
-              onClick={(e) => {
-                if (squares[y()][x()]) {
-                  // deep clone board, not sure how performant this is
-                  const b = JSON.stringify(board);
-                  setBoard(movePiece(e, selectedPiece() as unknown as SelectedPiece, x(), y(), JSON.parse(b) as (null | Piece)[][]));
-
-                  // remove all available pieces
-                  setSquare(initSquares());
-                  // disconnect selected piece after move, otherwise the next player could potentially move this player's piece
-                  setSelectedPiece(null);
-                }
-              }}
-            >
-              <Show when={piece}>
+  return (
+    <div class={styles.board}>
+      <For each={board}>
+        {(row, y) => (
+          <For each={row}>
+            {(piece, x) => {
+              return (
                 <div
+                  style="position: relative"
+                  class={`${squares[y()][x()] ? styles.available : ""} ${
+                    isSelected(
+                      { placement: Placement.Board, x: x(), y: y() },
+                      selectedPiece(),
+                      board
+                    )
+                      ? styles.selectedSquare
+                      : ""
+                  }
+                  ${piece ? styles.availablePiece : '' /* change cursor if square is occupied*/ }
+                  `}
                   onClick={(e) => {
-                    // if there is already a selected piece
-                    // if the piece selected is an enemy piece, continue event propogation
-                    if (selectedPiece() && (piece as Piece).owner !== turn()) {
-                      return;
+                    // if it's an available square
+                    if (squares[y()][x()]) {
+                      // deep clone board, not sure how performant this is
+                      const b = JSON.stringify(board);
+                      setBoard(
+                        movePiece(
+                          e,
+                          selectedPiece() as unknown as SelectedPiece,
+                          x(),
+                          y(),
+                          JSON.parse(b) as (null | Piece)[][]
+                        )
+                      );
+
+                      // remove all available pieces
+                      setSquare(initSquares());
+                      // disconnect selected piece after move, otherwise the next player could potentially move this player's piece
+                      setSelectedPiece(null);
+                    } else {
+                      // add the ability to click on the square underneath a friendly piece to select it
+                      if (piece && piece.owner === turn()) {
+                        setSelectedPiece({
+                          placement: Placement.Board,
+                          x: x(),
+                          y: y(),
+                        });
+                        showAvailable(e, piece as Piece, x(), y());
+                      } else {
+                        // add the ability to click on another square or unreachable enemy piece to deselect the currently selected piece
+                        // remove selected piece
+                        setSelectedPiece(null);
+                        // remove all available squares
+                        setSquare(initSquares());
+                      }
                     }
-                    setSelectedPiece({
-                      placement: Placement.Board,
-                      x: x(),
-                      y: y()
-                    });
-                    showAvailable(e, piece as Piece, x(), y())
                   }}
-                  style="position: absolute;">{kanji(piece as Piece)}</div>
-              </Show>
-            </div>
-          )}
-        </For>
-      }
-    </For>
-  </div>;
-}
+                >
+                  <Show when={piece}>
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // if there is already a selected piece
+                        // if the piece selected is an enemy piece, continue event propogation
+                        if (
+                          selectedPiece() &&
+                          (piece as Piece).owner !== turn()
+                        ) {
+                          return;
+                        }
+                        setSelectedPiece({
+                          placement: Placement.Board,
+                          x: x(),
+                          y: y(),
+                        });
+                        showAvailable(e, piece as Piece, x(), y());
+                      }}
+                      style="position: absolute;"
+                      class={
+                        (piece as Piece).owner === turn()
+                          ? styles.availablePiece
+                          : ""
+                      }
+                    >
+                      {kanji(piece as Piece)}
+                    </div>
+                  </Show>
+                </div>
+              );
+            }}
+          </For>
+        )}
+      </For>
+    </div>
+  );
+};
 
 export const initBoard = (): (Piece | null)[][] => {
   const boardInit: (Piece | null)[][] = [];
@@ -87,18 +160,18 @@ export const initBoard = (): (Piece | null)[][] => {
   lnsgkgsnl
   `;
 
-  let lines = template.trim().split('\n');
+  let lines = template.trim().split("\n");
   for (let y = 0; y < lines.length; y++) {
     let arr: (Piece | null)[] = [];
     let line: string = lines[y].trim();
     let owner = y <= 2 ? Player.Residing : Player.Challenging;
     for (let x = 0; x < line.length; x++) {
-      if (line[x] !== '.') {
+      if (line[x] !== ".") {
         arr.push({
           type: line[x],
           owner: owner,
           rank: Rank.Regular,
-          placement: Placement.Board
+          placement: Placement.Board,
         });
       } else {
         arr.push(null);
@@ -108,12 +181,18 @@ export const initBoard = (): (Piece | null)[][] => {
   }
 
   return boardInit;
-}
+};
 
 const [board, setBoard] = createStore(initBoard());
 const [squares, setSquare] = createStore(initSquares());
 
-const addAvailableTowards = (x: number, y: number, dx: number, dy: number, s: boolean[][]): void => {
+const addAvailableTowards = (
+  x: number,
+  y: number,
+  dx: number,
+  dy: number,
+  s: boolean[][]
+): void => {
   x += dx;
   y += dy;
   // while within board
@@ -133,9 +212,15 @@ const addAvailableTowards = (x: number, y: number, dx: number, dy: number, s: bo
       y += dy;
     }
   }
-}
+};
 
-const addAvailable = (x: number, y: number, dx: number, dy: number, s: boolean[][]): void => {
+const addAvailable = (
+  x: number,
+  y: number,
+  dx: number,
+  dy: number,
+  s: boolean[][]
+): void => {
   x += dx;
   y += dy;
   if (x >= 0 && x < 9 && y >= 0 && y < 9) {
@@ -148,37 +233,50 @@ const addAvailable = (x: number, y: number, dx: number, dy: number, s: boolean[]
       s[y][x] = true;
     }
   }
-}
+};
 
 const showAvailable = (e: MouseEvent, p: Piece, x: number, y: number) => {
   let s = initSquares();
 
   // also need to handle if from reserve or if promoted
   switch (p.type) {
-    case 'l': {
+    case "l": {
       addAvailableTowards(x, y, 0, turn(), s);
       break;
     }
-    case 'n': {
+    case "n": {
       const dy = turn() * 2;
       [-1, 1].forEach((dx, _) => {
         addAvailable(x, y, dx, dy, s);
       });
       break;
     }
-    case 's': {
-      [[-1, 1], [0, 1], [1, 1], [-1, -1], [1, -1]].forEach(([dx, dy]) => {
+    case "s": {
+      [
+        [-1, 1],
+        [0, 1],
+        [1, 1],
+        [-1, -1],
+        [1, -1],
+      ].forEach(([dx, dy]) => {
         addAvailable(x, y, dx, dy * turn(), s);
       });
       break;
     }
-    case 'g': {
-      [[-1, 1], [0, 1], [1, 1], [-1, 0], [1, 0], [0, -1]].forEach(([dx, dy]) => {
+    case "g": {
+      [
+        [-1, 1],
+        [0, 1],
+        [1, 1],
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+      ].forEach(([dx, dy]) => {
         addAvailable(x, y, dx, dy * turn(), s);
       });
       break;
     }
-    case 'k': {
+    case "k": {
       for (let dx = -1; dx <= 1; dx++) {
         for (let dy = -1; dy <= 1; dy++) {
           if (!(dx == 0 && dy == 0)) {
@@ -188,24 +286,34 @@ const showAvailable = (e: MouseEvent, p: Piece, x: number, y: number) => {
       }
       break;
     }
-    case 'r': {
-      [[1, 0], [-1, 0], [0, -1], [0, 1]].forEach(([dx, dy]) => {
+    case "r": {
+      [
+        [1, 0],
+        [-1, 0],
+        [0, -1],
+        [0, 1],
+      ].forEach(([dx, dy]) => {
         addAvailableTowards(x, y, dx, dy, s);
       });
       break;
     }
-    case 'b': {
-      [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(([dx, dy]) => {
+    case "b": {
+      [
+        [1, 1],
+        [1, -1],
+        [-1, 1],
+        [-1, -1],
+      ].forEach(([dx, dy]) => {
         addAvailableTowards(x, y, dx, dy, s);
       });
       break;
     }
-    case 'p': {
+    case "p": {
       addAvailable(x, y, 0, turn(), s);
       break;
     }
     default: {
-      console.log('fatal error: invalid piece selected');
+      console.log("fatal error: invalid piece selected");
       break;
     }
   }
@@ -222,4 +330,4 @@ const showAvailable = (e: MouseEvent, p: Piece, x: number, y: number) => {
   //   }
   // }
   setSquare(s);
-}
+};

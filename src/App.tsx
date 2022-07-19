@@ -9,7 +9,8 @@ export const [turn, setTurn] = createSignal(Player.Challenging);
 export interface SelectedPiece {
   placement: Placement,
   x?: number,
-  y?: number
+  y?: number,
+  pieceType?: Piece,
 }
 
 const temp = (): null | SelectedPiece => null;
