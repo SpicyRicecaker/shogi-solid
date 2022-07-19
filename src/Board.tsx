@@ -51,6 +51,11 @@ export const BoardComponent: Component = () => {
               <Show when={piece}>
                 <div
                   onClick={(e) => {
+                    // if there is already a selected piece
+                    // if the piece selected is an enemy piece, continue event propogation
+                    if (selectedPiece() && (piece as Piece).owner !== turn()) {
+                      return;
+                    }
                     setSelectedPiece({
                       placement: Placement.Board,
                       x: x(),
