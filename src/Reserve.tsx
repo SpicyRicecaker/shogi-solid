@@ -2,6 +2,8 @@ import { Piece, Player, Placement, Rank, kanji } from "./lib";
 import { createEffect, For } from "solid-js";
 import type { Component } from "solid-js";
 
+import { turn, selectedPiece, setSelectedPiece, SelectedPiece } from "./App";
+
 import styles from "./App.module.css";
 
 export interface DoubledReserve {
@@ -10,8 +12,8 @@ export interface DoubledReserve {
 }
 
 interface ReservePiece {
-  type: string,
-  count: number,
+  type: string;
+  count: number;
 }
 
 export const initReserve = (): ReservePiece[] => {
@@ -19,7 +21,7 @@ export const initReserve = (): ReservePiece[] => {
   const reserve: ReservePiece[] = [];
 
   for (const c of template) {
-    reserve.push({type: c, count: 0});
+    reserve.push({ type: c, count: 0 });
   }
 
   // console.log(reserve);
@@ -36,15 +38,7 @@ export const initDoubledReserve = (): DoubledReserve => ({
 export const ReserveComponent: Component<{
   owner: Player;
   reserve: ReservePiece[];
-  // setReserve: SetStoreFunction<DoubledReserve>
-  // reserve: Store<ReservePiece[]>;
-  // setStore: SetStoreFunction<ReservePiece[]>;
 }> = (props) => {
-  // console.log(props.reserve, "123");
-  // console.log(Object.keys(map));
-
-  createEffect(() => console.log(props.reserve));
-
   return (
     <div class={styles.reserve}>
       <For each={Array.from(props.reserve)}>
@@ -54,7 +48,26 @@ export const ReserveComponent: Component<{
               style="position: relative"
               class={reservePiece.count === 0 ? styles.empty : ""}
             >
-              <div>{kanji(props.owner, Rank.Regular, reservePiece.type)}</div>
+              <div
+                onClick={(e) => {
+                  if (props.owner !== turn()) {
+                    return;
+                  }
+
+                  setSelectedPiece({
+                    placement: Placement.Reserve,
+                    type: reservePiece.type,
+                    owner: props.owner,
+                  });
+                }}
+                class={
+                  props.owner === turn() && reservePiece.count != 0
+                    ? styles.availablePiece
+                    : ""
+                }
+              >
+                {kanji(props.owner, Rank.Regular, reservePiece.type)}
+              </div>
               <div style="position: absolute; top: 0; left: 0; font-size: calc(var(--square-len) * .3)">
                 {reservePiece.count}
               </div>

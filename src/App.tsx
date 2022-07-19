@@ -12,7 +12,8 @@ export interface SelectedPiece {
   placement: Placement;
   x?: number;
   y?: number;
-  pieceType?: Piece;
+  type?: string;
+  owner?: Player;
 }
 
 const temp = (): null | SelectedPiece => null;

@@ -1,6 +1,7 @@
-import { For, Show } from "solid-js";
+import { For, Show, createEffect } from "solid-js";
 import {
   turn,
+  setTurn,
   selectedPiece,
   SelectedPiece,
   setSelectedPiece,
@@ -28,23 +29,36 @@ const movePiece = (
   b: (Piece | null)[][],
   r: DoubledReserve
 ): void => {
-  // match statement here later TODO DEBUG ...
-  // console.log("attemping to move piece");
-  const temp = b[y][x];
-  // if we actually took a piece, move it to the selected piece's player's reserve
-  if (temp) {
-    r[(b[p.y as number][p.x as number] as Piece).owner].find(
-      (reservePiece) => reservePiece.type === temp.type
-    )!.count += 1;
+  if (p.placement === Placement.Board) {
+    // match statement here later TODO DEBUG ...
+    // console.log("attemping to move piece");
+    const temp = b[y][x];
+    // if we actually took a piece, move it to the selected piece's player's reserve
+    if (temp) {
+      r[b[p.y!][p.x!]!.owner].find(
+        (reservePiece) => reservePiece.type === temp.type
+      )!.count += 1;
+    }
+
+    b[y][x] = b[p.y!][p.x!];
+
+    // also need to handle promotions as well.
+    b[p.y!][p.x!] = null;
+
+    // add temp to `turn()`'s reserve
+    // also implement take
+  } else {
+    b[y][x] = {
+      type: p.type!,
+      owner: p.owner!,
+      rank: Rank.Regular,
+      placement: Placement.Board,
+    };
+    r[p.owner!].find(
+      (reservePiece) => reservePiece.type === p.type
+    )!.count -= 1;
+    // decrement counter
   }
-
-  b[y][x] = b[p.y as number][p.x as number];
-
-  // also need to handle promotions as well.
-  b[p.y as number][p.x as number] = null;
-
-  // add temp to `turn()`'s reserve
-  // also implement take
 };
 
 const isSelected = (
@@ -69,6 +83,18 @@ const isSelected = (
 };
 
 export const BoardComponent: Component = () => {
+  // on change of selected piece, reset our squares
+
+  const doShowAvailable = (
+    selectedPiece: SelectedPiece | null
+    // board: (Piece | null)[][],
+    // reserve: DoubledReserve
+  ) => {
+    setSquare(getAvailable(selectedPiece, board, reserve));
+  };
+
+  createEffect(() => doShowAvailable(selectedPiece()));
+
   return (
     <div class={styles.board}>
       <For each={board}>
@@ -108,9 +134,11 @@ export const BoardComponent: Component = () => {
                       );
 
                       // remove all available pieces
-                      setSquare(initSquares());
+                      // setSquare(initSquares());
                       // disconnect selected piece after move, otherwise the next player could potentially move this player's piece
                       setSelectedPiece(null);
+                      // change turn
+                      setTurn(turn() * -1);
                     } else {
                       // add the ability to click on the square underneath a friendly piece to select it
                       if (piece && piece.owner === turn()) {
@@ -119,13 +147,13 @@ export const BoardComponent: Component = () => {
                           x: x(),
                           y: y(),
                         });
-                        showAvailable(e, piece as Piece, x(), y());
+                        // showAvailable(e, piece as Piece, x(), y());
                       } else {
                         // add the ability to click on another square or unreachable enemy piece to deselect the currently selected piece
                         // remove selected piece
                         setSelectedPiece(null);
                         // remove all available squares
-                        setSquare(initSquares());
+                        // setSquare(initSquares());
                       }
                     }
                   }}
@@ -150,7 +178,7 @@ export const BoardComponent: Component = () => {
                           x: x(),
                           y: y(),
                         });
-                        showAvailable(e, piece as Piece, x(), y());
+                        // showAvailable(e, piece as Piece, x(), y());
                       }}
                       style="position: absolute;"
                       class={
@@ -265,99 +293,197 @@ const addAvailable = (
   }
 };
 
-const showAvailable = (e: MouseEvent, p: Piece, x: number, y: number) => {
+const getAvailable = (
+  selectedPiece: SelectedPiece | null,
+  board: (Piece | null)[][],
+  reserve: DoubledReserve
+) => {
   let s = initSquares();
 
-  // also need to handle if from reserve or if promoted
-  switch (p.type) {
-    case "l": {
-      addAvailableTowards(x, y, 0, turn(), s);
-      break;
+  if (!selectedPiece) {
+    return s;
+  }
+
+  if (selectedPiece.placement === Placement.Board) {
+    const p = board[selectedPiece.y!][selectedPiece.x!];
+
+    if (!p) {
+      return s;
     }
-    case "n": {
-      const dy = turn() * 2;
-      [-1, 1].forEach((dx, _) => {
-        addAvailable(x, y, dx, dy, s);
-      });
-      break;
-    }
-    case "s": {
-      [
-        [-1, 1],
-        [0, 1],
-        [1, 1],
-        [-1, -1],
-        [1, -1],
-      ].forEach(([dx, dy]) => {
-        addAvailable(x, y, dx, dy * turn(), s);
-      });
-      break;
-    }
-    case "g": {
-      [
-        [-1, 1],
-        [0, 1],
-        [1, 1],
-        [-1, 0],
-        [1, 0],
-        [0, -1],
-      ].forEach(([dx, dy]) => {
-        addAvailable(x, y, dx, dy * turn(), s);
-      });
-      break;
-    }
-    case "k": {
-      for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-          if (!(dx == 0 && dy == 0)) {
-            addAvailable(x, y, dx, dy, s);
+
+    const [x, y] = [selectedPiece.x!, selectedPiece.y!];
+
+    // also need to handle if from reserve or if promoted
+    switch (p.type) {
+      case "l": {
+        addAvailableTowards(x, y, 0, turn(), s);
+        break;
+      }
+      case "n": {
+        const dy = turn() * 2;
+        [-1, 1].forEach((dx, _) => {
+          addAvailable(x, y, dx, dy, s);
+        });
+        break;
+      }
+      case "s": {
+        [
+          [-1, 1],
+          [0, 1],
+          [1, 1],
+          [-1, -1],
+          [1, -1],
+        ].forEach(([dx, dy]) => {
+          addAvailable(x, y, dx, dy * turn(), s);
+        });
+        break;
+      }
+      case "g": {
+        [
+          [-1, 1],
+          [0, 1],
+          [1, 1],
+          [-1, 0],
+          [1, 0],
+          [0, -1],
+        ].forEach(([dx, dy]) => {
+          addAvailable(x, y, dx, dy * turn(), s);
+        });
+        break;
+      }
+      case "k": {
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            if (!(dx == 0 && dy == 0)) {
+              addAvailable(x, y, dx, dy, s);
+            }
           }
         }
+        break;
       }
-      break;
+      case "r": {
+        [
+          [1, 0],
+          [-1, 0],
+          [0, -1],
+          [0, 1],
+        ].forEach(([dx, dy]) => {
+          addAvailableTowards(x, y, dx, dy, s);
+        });
+        break;
+      }
+      case "b": {
+        [
+          [1, 1],
+          [1, -1],
+          [-1, 1],
+          [-1, -1],
+        ].forEach(([dx, dy]) => {
+          addAvailableTowards(x, y, dx, dy, s);
+        });
+        break;
+      }
+      case "p": {
+        addAvailable(x, y, 0, turn(), s);
+        break;
+      }
+      default: {
+        console.log("fatal error: invalid piece selected");
+        break;
+      }
     }
-    case "r": {
-      [
-        [1, 0],
-        [-1, 0],
-        [0, -1],
-        [0, 1],
-      ].forEach(([dx, dy]) => {
-        addAvailableTowards(x, y, dx, dy, s);
-      });
-      break;
+    return s;
+  } else {
+    const selPc = reserve[selectedPiece.owner!].find(
+      (p) => p.type === selectedPiece.type
+    );
+
+    switch (selPc!.type) {
+      case "p": {
+        const isPawnInColumn: boolean[] = [];
+        for (let i = 0; i < 9; i++) {
+          isPawnInColumn.push(false);
+        }
+
+        // allow all columns which do not have a pawn in it
+        for (let y = 0; y < board.length; y++) {
+          for (let x = 0; x < board.length; x++) {
+            if (board[y][x]) {
+              if (
+                board[y][x]!.owner === selectedPiece.owner! &&
+                board[y][x]!.type === "p"
+              ) {
+                isPawnInColumn[x] = true;
+              }
+            }
+          }
+        }
+        console.log(isPawnInColumn);
+
+        let [y, end] =
+          selectedPiece.owner === Player.Challenging
+            ? [1, board.length]
+            : [0, board.length - 1];
+
+        for (let x = 0; x < s.length; x++) {
+          if (!isPawnInColumn[x]) {
+            for (y; y < end; y++) {
+              // if there is no piece in there
+              if (!board[y][x]) {
+                s[y][x] = true;
+              }
+            }
+          }
+        }
+        break;
+      }
+      case "s":
+      case "g":
+      case "b":
+      case "r": {
+        for (let y = 0; y < board.length; y++) {
+          for (let x = 0; x < board.length; x++) {
+            if (!board[y][x]) {
+              s[y][x] = true;
+            }
+          }
+        }
+        break;
+      }
+      case "n": {
+        // anywhere but the last two, dependent on turn
+        let [y, end] =
+          selectedPiece.owner === Player.Challenging
+            ? [2, board.length]
+            : [0, board.length - 2];
+
+        for (y; y < end; y++) {
+          for (let x = 0; x < board.length; x++) {
+            if (!board[y][x]) {
+              s[y][x] = true;
+            }
+          }
+        }
+        break;
+      }
+      case "l":
+        let [y, end] =
+          selectedPiece.owner === Player.Challenging
+            ? [1, board.length]
+            : [0, board.length - 1];
+
+        for (y; y < end; y++) {
+          for (let x = 0; x < board.length; x++) {
+            if (!board[y][x]) {
+              s[y][x] = true;
+            }
+          }
+        }
+        break;
+      default:
+        console.log("movement for this reserve piece is not implemented yet");
+        break;
     }
-    case "b": {
-      [
-        [1, 1],
-        [1, -1],
-        [-1, 1],
-        [-1, -1],
-      ].forEach(([dx, dy]) => {
-        addAvailableTowards(x, y, dx, dy, s);
-      });
-      break;
-    }
-    case "p": {
-      addAvailable(x, y, 0, turn(), s);
-      break;
-    }
-    default: {
-      console.log("fatal error: invalid piece selected");
-      break;
-    }
+    return s;
   }
-  // match the piece
-  // for now just show every square as available
-  // for (let k = 0; k < squares.length; k++) {
-  //   for (let j = 0; j < squares[k].length; j++) {
-  //     setBoard(
-  //       (boardPrev) => {
-  //         (boardPrev[k][j] as Square).available = true;
-  //         return boardPrev;
-  //       }
-  //     )
-  //   }
-  // }
-  setSquare(s);
 };
