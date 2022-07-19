@@ -1,7 +1,11 @@
 :root {
   --board-len: calc(min(90vh, 90vw) * 5 / 7);
   --square-len: calc(var(--board-len) / 9);
-  --font-size: calc(var(--square-len) * 0.5)
+  --font-size: calc(var(--square-len) * 0.5);
+}
+
+body {
+  color: #454138;
 }
 
 .boardBody {
@@ -58,9 +62,9 @@
 
 .available {
   cursor: pointer;
-  background-color: aliceblue;
+  background-color: #3891a620;
   &:hover {
-    background-color: rgba(0, 0, 121, 0.5);
+    background-color: #3891a680;
   }
 }
 
@@ -69,5 +73,15 @@
 }
 
 .selectedSquare {
-  background-color: gold;
+  background-color: #DB5461;
+}
+
+.piece {
+  filter: drop-shadow(0.5px 5px #adaa97);
+  & > div {
+    padding: 0.2rem;
+
+    background-color: #d1cdb7;
+    clip-path: polygon(0% 90%, 0% 25%, 50% 0%, 100% 25%, 100% 90%, 0% 90%);
+  }
 }

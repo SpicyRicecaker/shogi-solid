@@ -49,6 +49,9 @@ export const ReserveComponent: Component<{
               class={reservePiece.count === 0 ? styles.empty : ""}
             >
               <div
+                style={`transform: ${
+                  props.owner === Player.Challenging ? "none" : "rotate(180deg)"
+                };`}
                 onClick={(e) => {
                   if (props.owner !== turn()) {
                     return;
@@ -68,7 +71,11 @@ export const ReserveComponent: Component<{
               >
                 {kanji(props.owner, Rank.Regular, reservePiece.type)}
               </div>
-              <div style="position: absolute; top: 0; left: 0; font-size: calc(var(--square-len) * .3)">
+              <div
+                style={`position: absolute; top: 0; left: 0; font-size: calc(var(--square-len) * .3); transform: ${
+                  props.owner === Player.Challenging ? "none" : "rotate(180deg)"
+                }; `}
+              >
                 {reservePiece.count}
               </div>
             </div>

@@ -82,128 +82,6 @@ const isSelected = (
   }
 };
 
-export const BoardComponent: Component = () => {
-  // on change of selected piece, reset our squares
-
-  const doShowAvailable = (
-    selectedPiece: SelectedPiece | null
-    // board: (Piece | null)[][],
-    // reserve: DoubledReserve
-  ) => {
-    setSquare(getAvailable(selectedPiece, board, reserve));
-  };
-
-  createEffect(() => doShowAvailable(selectedPiece()));
-
-  return (
-    <div class={styles.board}>
-      <For each={board}>
-        {(row, y) => (
-          <For each={row}>
-            {(piece, x) => {
-              return (
-                <div
-                  style="position: relative"
-                  class={`${squares[y()][x()] ? styles.available : ""} ${
-                    isSelected(
-                      { placement: Placement.Board, x: x(), y: y() },
-                      selectedPiece(),
-                      board
-                    )
-                      ? styles.selectedSquare
-                      : ""
-                  }
-                  ${
-                    piece && piece.owner === turn()
-                      ? styles.availablePiece
-                      : "" /* change cursor if square is occupied*/
-                  }
-                  `}
-                  onClick={(e) => {
-                    // if it's an available square
-                    if (squares[y()][x()]) {
-                      // deep clone board, not sure how performant this is
-
-                      movePiece(
-                        e,
-                        selectedPiece() as unknown as SelectedPiece,
-                        x(),
-                        y(),
-                        board,
-                        reserve
-                      );
-
-                      // remove all available pieces
-                      // setSquare(initSquares());
-                      // disconnect selected piece after move, otherwise the next player could potentially move this player's piece
-                      setSelectedPiece(null);
-                      // change turn
-                      setTurn(turn() * -1);
-                    } else {
-                      // add the ability to click on the square underneath a friendly piece to select it
-                      if (piece && piece.owner === turn()) {
-                        setSelectedPiece({
-                          placement: Placement.Board,
-                          x: x(),
-                          y: y(),
-                        });
-                        // showAvailable(e, piece as Piece, x(), y());
-                      } else {
-                        // add the ability to click on another square or unreachable enemy piece to deselect the currently selected piece
-                        // remove selected piece
-                        setSelectedPiece(null);
-                        // remove all available squares
-                        // setSquare(initSquares());
-                      }
-                    }
-                  }}
-                >
-                  <Show when={piece}>
-                    <div
-                      onClick={(e) => {
-                        //  fix bug introduced by previous commit where clicking directly on an enemy piece with a selectedpiece doesn't capture it
-                        if (
-                          selectedPiece() &&
-                          (piece as Piece).owner !== turn()
-                        ) {
-                          return;
-                        }
-                        e.stopPropagation();
-                        if ((piece as Piece).owner !== turn()) {
-                          return;
-                        }
-
-                        setSelectedPiece({
-                          placement: Placement.Board,
-                          x: x(),
-                          y: y(),
-                        });
-                        // showAvailable(e, piece as Piece, x(), y());
-                      }}
-                      style="position: absolute;"
-                      class={
-                        (piece as Piece).owner === turn()
-                          ? styles.availablePiece
-                          : ""
-                      }
-                    >
-                      {kanji(
-                        (piece as Piece).owner,
-                        (piece as Piece).rank,
-                        (piece as Piece).type
-                      )}
-                    </div>
-                  </Show>
-                </div>
-              );
-            }}
-          </For>
-        )}
-      </For>
-    </div>
-  );
-};
-
 export const initBoard = (): (Piece | null)[][] => {
   const boardInit: (Piece | null)[][] = [];
   let template = `
@@ -486,4 +364,136 @@ const getAvailable = (
     }
     return s;
   }
+};
+
+export const BoardComponent: Component = () => {
+  // on change of selected piece, reset our squares
+
+  const doShowAvailable = (
+    selectedPiece: SelectedPiece | null
+    // board: (Piece | null)[][],
+    // reserve: DoubledReserve
+  ) => {
+    setSquare(getAvailable(selectedPiece, board, reserve));
+  };
+
+  createEffect(() => doShowAvailable(selectedPiece()));
+
+  return (
+    <div class={styles.board}>
+      <For each={board}>
+        {(row, y) => (
+          <For each={row}>
+            {(piece, x) => {
+              return (
+                <div
+                  style="position: relative"
+                  class={`${squares[y()][x()] ? styles.available : ""} ${
+                    isSelected(
+                      { placement: Placement.Board, x: x(), y: y() },
+                      selectedPiece(),
+                      board
+                    )
+                      ? styles.selectedSquare
+                      : ""
+                  }
+                  ${
+                    piece && piece.owner === turn()
+                      ? styles.availablePiece
+                      : "" /* change cursor if square is occupied*/
+                  }
+                  `}
+                  onClick={(e) => {
+                    // if it's an available square
+                    if (squares[y()][x()]) {
+                      // deep clone board, not sure how performant this is
+
+                      movePiece(
+                        e,
+                        selectedPiece() as unknown as SelectedPiece,
+                        x(),
+                        y(),
+                        board,
+                        reserve
+                      );
+
+                      // remove all available pieces
+                      // setSquare(initSquares());
+                      // disconnect selected piece after move, otherwise the next player could potentially move this player's piece
+                      setSelectedPiece(null);
+                      // change turn
+                      setTurn(turn() * -1);
+                    } else {
+                      // add the ability to click on the square underneath a friendly piece to select it
+                      if (piece && piece.owner === turn()) {
+                        setSelectedPiece({
+                          placement: Placement.Board,
+                          x: x(),
+                          y: y(),
+                        });
+                        // showAvailable(e, piece as Piece, x(), y());
+                      } else {
+                        // add the ability to click on another square or unreachable enemy piece to deselect the currently selected piece
+                        // remove selected piece
+                        setSelectedPiece(null);
+                        // remove all available squares
+                        // setSquare(initSquares());
+                      }
+                    }
+                  }}
+                >
+                  <Show when={piece}>
+                    <div
+                      onClick={(e) => {
+                        //  fix bug introduced by previous commit where clicking directly on an enemy piece with a selectedpiece doesn't capture it
+                        if (
+                          selectedPiece() &&
+                          (piece as Piece).owner !== turn()
+                        ) {
+                          return;
+                        }
+                        e.stopPropagation();
+                        if ((piece as Piece).owner !== turn()) {
+                          return;
+                        }
+
+                        setSelectedPiece({
+                          placement: Placement.Board,
+                          x: x(),
+                          y: y(),
+                        });
+                        // showAvailable(e, piece as Piece, x(), y());
+                      }}
+                      style={`position: absolute; transform: ${
+                        (piece as Piece).owner === Player.Challenging
+                          ? "none"
+                          : "rotate(180deg)"
+                      };
+                      `}
+                      class={`
+                        ${
+                          (piece as Piece).owner === turn()
+                            ? styles.availablePiece
+                            : ""
+                        }
+                        ${styles.piece}
+                      `}
+                    >
+                      <div>
+                        {kanji(
+                          (piece as Piece).owner,
+                          (piece as Piece).rank,
+                          (piece as Piece).type
+                        )}
+                      </div>
+                    </div>
+                  </Show>
+                </div>
+              );
+            }}
+          </For>
+        )}
+      </For>
+    </div>
+  );
 };

@@ -27,8 +27,15 @@ const App: Component = () => {
       <div>
         <div>A Game of Shogi</div>
         <a href="https://github.com/SpicyRicecaker/shogi-solid">src</a>
+        <br/>
+        <a href="javascript:">settings (WIP)</a>
       </div>
-      <div class={styles.boardBody}>
+      <div
+        class={styles.boardBody}
+        style={`transform: ${
+          turn() === Player.Challenging ? "none" : "rotate(180deg)"
+        }`}
+      >
         <ReserveComponent
           owner={Player.Residing}
           reserve={reserve[Player.Residing]}
