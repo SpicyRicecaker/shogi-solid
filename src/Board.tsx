@@ -46,16 +46,25 @@ const movePiece = (
   if (p.placement === Placement.Board) {
     // match statement here later TODO DEBUG ...
     const temp = b[y][x];
+    const selPc = b[p.y!][p.x!]!;
 
     batch(() => {
       // if we actually took a piece, move it to the selected piece's player's reserve
       if (temp) {
         // console.log(r, b, p, temp.type);
-        r[b[p.y!][p.x!]!.owner].find(
+        r[selPc.owner].find(
           (reservePiece) => reservePiece.type === temp.type
         )!.count += 1;
       }
-      b[y][x] = b[p.y!][p.x!];
+
+      if (selPc.rank == Rank.Regular && selPc.owner === -1 ? y <= 2 : y >= 6) {
+        // promote the piece
+        if (selPc.type !== "k") {
+          selPc.rank = Rank.Promoted;
+        }
+      }
+
+      b[y][x] = selPc;
       b[p.y!][p.x!] = null;
     });
     // also need to handle promotions as well.
@@ -102,27 +111,16 @@ const isSelected = (
 export const initBoard = (): (Piece | null)[][] => {
   const boardInit: (Piece | null)[][] = [];
   const template = `
-  rrrrkrrrr
-  ppp......
+  lnsgkgsnl
+  .r.....b.
+  ppppppppp
   .........
   .........
   .........
-  .........
-  .........
-  ......ppp
-  rrrrkrrrr
+  ppppppppp
+  .b.....r.
+  lnsgkgsnl
   `;
-  // const template = `
-  // lnsgkgsnl
-  // .r.....b.
-  // ppppppppp
-  // .........
-  // .........
-  // .........
-  // ppppppppp
-  // .b.....r.
-  // lnsgkgsnl
-  // `;
 
   let lines = template.trim().split("\n");
   for (let y = 0; y < lines.length; y++) {
@@ -309,85 +307,161 @@ const setAvailable = (
 
     const [x, y] = [selectedPiece.x!, selectedPiece.y!];
 
-    // also need to handle if from reserve or if promoted
-    switch (p.type) {
-      case "l": {
-        addAvailableTowards(x, y, p.owner, 0, p.owner, s, board);
-        break;
-      }
-      case "n": {
-        const dy = p.owner * 2;
-        [-1, 1].forEach((dx, _) => {
-          addAvailable(x, y, p.owner, dx, dy, s, board);
-        });
-        break;
-      }
-      case "s": {
-        [
-          [-1, 1],
-          [0, 1],
-          [1, 1],
-          [-1, -1],
-          [1, -1],
-        ].forEach(([dx, dy]) => {
-          addAvailable(x, y, p.owner, dx, dy * p.owner, s, board);
-        });
-        break;
-      }
-      case "g": {
-        [
-          [-1, 1],
-          [0, 1],
-          [1, 1],
-          [-1, 0],
-          [1, 0],
-          [0, -1],
-        ].forEach(([dx, dy]) => {
-          addAvailable(x, y, p.owner, dx, dy * p.owner, s, board);
-        });
-        break;
-      }
-      case "k": {
-        for (let dx = -1; dx <= 1; dx++) {
-          for (let dy = -1; dy <= 1; dy++) {
-            if (!(dx == 0 && dy == 0)) {
-              addAvailable(x, y, p.owner, dx, dy, s, board);
+    if (p.rank === Rank.Regular) {
+      // also need to handle if from reserve or if promoted
+      switch (p.type) {
+        case "l": {
+          addAvailableTowards(x, y, p.owner, 0, p.owner, s, board);
+          break;
+        }
+        case "n": {
+          const dy = p.owner * 2;
+          [-1, 1].forEach((dx, _) => {
+            addAvailable(x, y, p.owner, dx, dy, s, board);
+          });
+          break;
+        }
+        case "s": {
+          [
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+            [-1, -1],
+            [1, -1],
+          ].forEach(([dx, dy]) => {
+            addAvailable(x, y, p.owner, dx, dy * p.owner, s, board);
+          });
+          break;
+        }
+        case "g": {
+          [
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+            [-1, 0],
+            [1, 0],
+            [0, -1],
+          ].forEach(([dx, dy]) => {
+            addAvailable(x, y, p.owner, dx, dy * p.owner, s, board);
+          });
+          break;
+        }
+        case "k": {
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+              if (!(dx == 0 && dy == 0)) {
+                addAvailable(x, y, p.owner, dx, dy, s, board);
+              }
             }
           }
+          break;
         }
-        break;
+        case "r": {
+          [
+            [1, 0],
+            [-1, 0],
+            [0, -1],
+            [0, 1],
+          ].forEach(([dx, dy]) => {
+            addAvailableTowards(x, y, p.owner, dx, dy, s, board);
+          });
+          break;
+        }
+        case "b": {
+          [
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+          ].forEach(([dx, dy]) => {
+            addAvailableTowards(x, y, p.owner, dx, dy, s, board);
+          });
+          break;
+        }
+        case "p": {
+          addAvailable(x, y, p.owner, 0, p.owner, s, board);
+          break;
+        }
+        default: {
+          console.log("fatal error: invalid piece selected");
+          break;
+        }
       }
-      case "r": {
-        [
-          [1, 0],
-          [-1, 0],
-          [0, -1],
-          [0, 1],
-        ].forEach(([dx, dy]) => {
-          addAvailableTowards(x, y, p.owner, dx, dy, s, board);
-        });
-        break;
-      }
-      case "b": {
-        [
-          [1, 1],
-          [1, -1],
-          [-1, 1],
-          [-1, -1],
-        ].forEach(([dx, dy]) => {
-          addAvailableTowards(x, y, p.owner, dx, dy, s, board);
-        });
-        break;
-      }
-      case "p": {
-        addAvailable(x, y, p.owner, 0, p.owner, s, board);
-        break;
-      }
-      default: {
-        console.log("fatal error: invalid piece selected");
-        break;
+    } else {
+      switch (p.type) {
+        // gold movement
+        case "l":
+        case "n":
+        case "s":
+        case "g":
+        case "p": {
+          [
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+            [-1, 0],
+            [1, 0],
+            [0, -1],
+          ].forEach(([dx, dy]) => {
+            addAvailable(x, y, p.owner, dx, dy * p.owner, s, board);
+          });
+          break;
+        }
+        case "r": {
+          [
+            [1, 0],
+            [-1, 0],
+            [0, -1],
+            [0, 1],
+          ].forEach(([dx, dy]) => {
+            addAvailableTowards(x, y, p.owner, dx, dy, s, board);
+          });
+          [
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+          ].forEach(([dx, dy]) => {
+            addAvailable(x, y, p.owner, dx, dy, s, board);
+          });
+          break;
+        }
+        case "b": {
+          [
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+          ].forEach(([dx, dy]) => {
+            addAvailableTowards(x, y, p.owner, dx, dy, s, board);
+          });
+          [
+            [1, 0],
+            [-1, 0],
+            [0, -1],
+            [0, 1],
+          ].forEach(([dx, dy]) => {
+            addAvailable(x, y, p.owner, dx, dy, s, board);
+          });
+          break;
+        }
+        case "k": {
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+              if (!(dx == 0 && dy == 0)) {
+                addAvailable(x, y, p.owner, dx, dy, s, board);
+              }
+            }
+          }
+          break;
+        }
+        default: {
+          console.log("fatal error: invalid piece selected");
+          break;
+        }
       }
     }
+
     return;
   } else {
     const selPc = reserve[selectedPiece.owner!].find(
@@ -533,7 +607,7 @@ export const BoardComponent: Component = () => {
                       );
                       // change turn
                       setTurn(turn() * -1);
-                      // return; 
+                      // return;
 
                       // on the beginning of a turn where a player is in check, check if it results in an endgame
                       const [xK, yK] = getKingCoords(turn(), boardStore);
