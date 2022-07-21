@@ -6,6 +6,7 @@ import {
   SelectedPiece,
   setSelectedPiece,
   reserve,
+  setRunning,
 } from "./App";
 import { Piece, Rank, Player, kanji, Placement } from "./lib";
 import { Component } from "solid-js";
@@ -14,6 +15,25 @@ import { DoubledReserve } from "./Reserve";
 
 import styles from "./App.module.css";
 import { initSquares } from "./squares";
+
+export const getKingCoords = (
+  o: Player,
+  b: (Piece | null)[][]
+): [number, number] => {
+  for (let y = 0; y < b.length; y++) {
+    for (let x = 0; x < b.length; x++) {
+      const piece = b[y][x];
+      if (!piece) {
+        continue;
+      }
+      if (piece.type === "k" && piece.owner === o) {
+        return [x, y];
+      }
+    }
+  }
+  // unreachable
+  return [0, 0];
+};
 
 // function takes in mutable reference to b and r, mutates them
 const movePiece = (
@@ -26,14 +46,15 @@ const movePiece = (
   if (p.placement === Placement.Board) {
     // match statement here later TODO DEBUG ...
     const temp = b[y][x];
-    // if we actually took a piece, move it to the selected piece's player's reserve
-    if (temp) {
-      r[b[p.y!][p.x!]!.owner].find(
-        (reservePiece) => reservePiece.type === temp.type
-      )!.count += 1;
-    }
 
     batch(() => {
+      // if we actually took a piece, move it to the selected piece's player's reserve
+      if (temp) {
+        // console.log(r, b, p, temp.type);
+        r[b[p.y!][p.x!]!.owner].find(
+          (reservePiece) => reservePiece.type === temp.type
+        )!.count += 1;
+      }
       b[y][x] = b[p.y!][p.x!];
       b[p.y!][p.x!] = null;
     });
@@ -256,21 +277,8 @@ export const getAvailableFromStore = (
         // find the king of the current side
         // this feels really slow
         // also it's weird how in javascript you can't name a variable the same as one that's already in scope, but if you use a for loop, it's allowed
-        const [xK, yK] = ((): [number, number] => {
-          for (let y = 0; y < b.length; y++) {
-            for (let x = 0; x < b.length; x++) {
-              const piece = b[y][x];
-              if (!piece) {
-                continue;
-              }
-              if (piece.type === "k" && piece.owner === o) {
-                return [x, y];
-              }
-            }
-          }
-          // unreachable
-          return [0, 0];
-        })();
+
+        const [xK, yK] = getKingCoords(o, b);
 
         // check if the king is in check
         if (isUnderCheck(xK, yK, b, r)) {
@@ -525,6 +533,45 @@ export const BoardComponent: Component = () => {
                       );
                       // change turn
                       setTurn(turn() * -1);
+                      // return; 
+
+                      // on the beginning of a turn where a player is in check, check if it results in an endgame
+                      const [xK, yK] = getKingCoords(turn(), boardStore);
+
+                      if (!isUnderCheck(xK, yK, boardStore, reserve)) {
+                        return;
+                      }
+
+                      for (let y = 0; y < boardStore.length; y++) {
+                        for (let x = 0; x < boardStore[y].length; x++) {
+                          const piece = boardStore[y][x];
+                          if (!piece || piece.owner !== turn()) {
+                            continue;
+                          }
+
+                          const t = getAvailableFromStore(
+                            {
+                              placement: Placement.Board,
+                              x: x,
+                              y: y,
+                            },
+                            boardStore,
+                            reserve
+                          );
+                          // x^4 time complexity let's goo
+                          for (let j = 0; j < t.length; j++) {
+                            for (let i = 0; i < t[j].length; i++) {
+                              if (t[j][i]) {
+                                console.log("can put", piece, "to", i, j);
+                                return;
+                              }
+                            }
+                          }
+                        }
+                      }
+                      // // set message to current player lost
+                      // // set running to false
+                      setRunning(false);
                     } else {
                       // add the ability to click on the square underneath a friendly piece to select it
                       if (piece && piece.owner === turn()) {

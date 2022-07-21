@@ -6,6 +6,7 @@
 
 body {
   color: #454138;
+  overflow: hidden;
 }
 
 .boardBody {

@@ -1,10 +1,11 @@
-import { Component, createSignal } from "solid-js";
+import { Component, createSignal, Show } from "solid-js";
 import { Player, Placement } from "./lib";
 import { createMutable } from "solid-js/store";
 
 import styles from "./App.module.css";
 import { BoardComponent } from "./Board";
 import { ReserveComponent, initDoubledReserve } from "./Reserve";
+import Win from "./Win";
 
 export const [turn, setTurn] = createSignal(Player.Challenging);
 
@@ -21,6 +22,8 @@ export const [selectedPiece, setSelectedPiece] = createSignal(temp());
 
 export const reserve = createMutable(initDoubledReserve());
 
+export const [running, setRunning] = createSignal(true);
+
 const App: Component = () => {
   return (
     <>
@@ -30,6 +33,7 @@ const App: Component = () => {
         <br />
         <a href="javascript:">settings (WIP)</a>
       </div>
+      <Win/>
       <div
         class={styles.boardBody}
         // style={`transform: ${
