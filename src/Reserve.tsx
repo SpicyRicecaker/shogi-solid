@@ -1,8 +1,15 @@
-import { Piece, Player, Placement, Rank, kanji } from "./lib";
-import { createEffect, For } from "solid-js";
+import { Player, Placement, Rank, kanji } from "./lib";
+import { For } from "solid-js";
 import type { Component } from "solid-js";
 
-import { turn, selectedPiece, setSelectedPiece, SelectedPiece } from "./App";
+import {
+  turn,
+  selectedPiece,
+  setSelectedPiece,
+  SelectedPiece,
+  reserve,
+} from "./App";
+import { boardStore, getAvailableFromStore, setSquare } from "./Board";
 
 import styles from "./App.module.css";
 
@@ -23,8 +30,6 @@ export const initReserve = (): ReservePiece[] => {
   for (const c of template) {
     reserve.push({ type: c, count: 0 });
   }
-
-  // console.log(reserve);
 
   return reserve;
 };
@@ -62,6 +67,9 @@ export const ReserveComponent: Component<{
                     type: reservePiece.type,
                     owner: props.owner,
                   });
+                  setSquare(
+                    getAvailableFromStore(selectedPiece(), boardStore, reserve)
+                  );
                 }}
                 class={
                   props.owner === turn() && reservePiece.count != 0

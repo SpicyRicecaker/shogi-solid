@@ -1,10 +1,10 @@
 import { Component, createSignal } from "solid-js";
-import { Piece, Player, Placement } from "./lib";
+import { Player, Placement } from "./lib";
 import { createMutable } from "solid-js/store";
 
 import styles from "./App.module.css";
 import { BoardComponent } from "./Board";
-import { ReserveComponent, initReserve, initDoubledReserve } from "./Reserve";
+import { ReserveComponent, initDoubledReserve } from "./Reserve";
 
 export const [turn, setTurn] = createSignal(Player.Challenging);
 
@@ -27,14 +27,14 @@ const App: Component = () => {
       <div>
         <div>A Game of Shogi</div>
         <a href="https://github.com/SpicyRicecaker/shogi-solid">src</a>
-        <br/>
+        <br />
         <a href="javascript:">settings (WIP)</a>
       </div>
       <div
         class={styles.boardBody}
-        style={`transform: ${
-          turn() === Player.Challenging ? "none" : "rotate(180deg)"
-        }`}
+        // style={`transform: ${
+        //   turn() === Player.Challenging ? "none" : "rotate(180deg)"
+        // }`}
       >
         <ReserveComponent
           owner={Player.Residing}
